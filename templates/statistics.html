@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Statistics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-button">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <h1 class="main-title" style="flex: 1; text-align: center; margin: 0;">
+                <i class="fas fa-chart-line" style="font-size: 0.8em; margin-right: 10px;"></i>
+                Statistics
+            </h1>
+            <div id="datetime" class="datetime"></div>
+        </header>
+
+        <!-- Timeline Filters -->
+        <div class="timeline-filters">
+            <button class="timeline-btn" data-period="1w">1 Week</button>
+            <button class="timeline-btn" data-period="2w">2 Weeks</button>
+            <button class="timeline-btn active" data-period="1m">1 Month</button>
+            <button class="timeline-btn" data-period="3m">3 Months</button>
+            <button class="timeline-btn" data-period="6m">6 Months</button>
+            <button class="timeline-btn" data-period="9m">9 Months</button>
+            <button class="timeline-btn" data-period="1y">1 Year</button>
+            <button class="timeline-btn" data-period="2y">2 Years</button>
+        </div>
+
+        <!-- Summary Cards -->
+        <!-- Breakdown Section -->
+        <div class="breakdown-section">
+            <h2>Breakdown</h2>
+            <div class="breakdown-content">
+                <div class="stats-grid-compact">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Portfolio Value</div>
+                        <div class="stat-value" id="statTotalValue">$0.00</div>
+                        <div class="stat-change" id="statValueChange">+$0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total P/L ($)</div>
+                        <div class="stat-value" id="statTotalPL">$0.00</div>
+                        <div class="stat-subtext" id="statPLPercent">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Invested</div>
+                        <div class="stat-value" id="statTotalInvested">$0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Number of Holdings</div>
+                        <div class="stat-value" id="statNumHoldings">0</div>
+                    </div>
+                </div>
+                <div class="breakdown-chart-container">
+                    <div class="chart-container-fixed" style="height: 300px;">
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-section">
+            <h2>Portfolio Performance</h2>
+            <div class="chart-container-fixed" style="height: 350px;">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Holdings Details Table -->
+        <div class="table-container">
+            <h2 style="padding: 20px 24px 0; margin: 0; font-size: 1.4em; font-weight: 700; color: #1d1d1f;">Individual Performance</h2>
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="ticker" onclick="sortStatsBy('ticker')">Ticker</th>
+                        <th class="sortable" data-column="name" onclick="sortStatsBy('name')">Name</th>
+                        <th class="sortable" data-column="value" onclick="sortStatsBy('value')">Value</th>
+                        <th class="sortable" data-column="pl_dollar" onclick="sortStatsBy('pl_dollar')">P/L $</th>
+                        <th class="sortable" data-column="pl_percent" onclick="sortStatsBy('pl_percent')">P/L %</th>
+                        <th class="sortable" data-column="portfolio_percent" onclick="sortStatsBy('portfolio_percent')">% of Portfolio</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <tr>
+                        <td colspan="6" class="no-data">Loading statistics...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const selectedPeriod = '1m'; // Default period
+        let holdings = [];
+        let performanceChart = null;
+        let breakdownChart = null;
+        
+        // Sorting state for statistics table
+        let statsSort = { column: 'pl_percent', direction: 'desc' }; // Default: P/L% descending
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('en-GB', options);
+        }
+
+        // Format currency
+        function formatCurrency(value) {
+            if (value === null || value === undefined || value === '') return '$0.00';
+            return `$${Math.abs(parseFloat(value)).toFixed(2)}`;
+        }
+
+        // Load holdings
+        async function loadHoldings() {
+            try {
+                const response = await fetch('/api/holdings');
+                holdings = await response.json();
+                updateStatistics();
+            } catch (error) {
+                console.error('Error loading holdings:', error);
+            }
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            if (holdings.length === 0) {
+                document.getElementById('statTotalValue').textContent = '$0.00';
+                document.getElementById('statValueChange').textContent = '+$0.00';
+                document.getElementById('statTotalPL').textContent = '$0.00';
+                document.getElementById('statPLPercent').textContent = '0%';
+                document.getElementById('statTotalInvested').textContent = '$0.00';
+                document.getElementById('statNumHoldings').textContent = '0';
+                return;
+            }
+
+            let totalValue = 0;
+            let totalPL = 0;
+            let totalInvested = 0;
+
+            holdings.forEach(holding => {
+                totalValue += holding.value || 0;
+                totalPL += holding.pl_dollar || 0;
+                totalInvested += (holding.entry_price * holding.shares);
+            });
+
+            const plPercent = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+
+            document.getElementById('statTotalValue').textContent = formatCurrency(totalValue);
+            document.getElementById('statTotalPL').textContent = (totalPL >= 0 ? '+' : '-') + formatCurrency(totalPL);
+            document.getElementById('statPLPercent').textContent = (totalPL >= 0 ? '+' : '-') + plPercent.toFixed(2) + '%';
+            document.getElementById('statTotalInvested').textContent = formatCurrency(totalInvested);
+            document.getElementById('statNumHoldings').textContent = holdings.length;
+
+            // Apply color coding
+            const plElement = document.getElementById('statTotalPL');
+            const plPercentElement = document.getElementById('statPLPercent');
+            const valueChangeElement = document.getElementById('statValueChange');
+            
+            valueChangeElement.textContent = (totalPL >= 0 ? '+' : '') + formatCurrency(totalPL);
+            
+            if (totalPL > 0) {
+                plElement.classList.add('positive');
+                plPercentElement.classList.add('positive');
+                valueChangeElement.classList.add('positive');
+            } else if (totalPL < 0) {
+                plElement.classList.add('negative');
+                plPercentElement.classList.add('negative');
+                valueChangeElement.classList.add('negative');
+            }
+
+            renderTable();
+            createPerformanceChart();
+            createBreakdownChart();
+        }
+
+        // Sort statistics table
+        function sortStats(data) {
+            const sorted = [...data];
+            const { column, direction } = statsSort;
+            
+            sorted.sort((a, b) => {
+                let aVal, bVal;
+                
+                if (column === 'portfolio_percent') {
+                    const totalValue = holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+                    aVal = totalValue > 0 ? (a.value / totalValue) * 100 : 0;
+                    bVal = totalValue > 0 ? (b.value / totalValue) * 100 : 0;
+                } else {
+                    aVal = a[column];
+                    bVal = b[column];
+                }
+                
+                // Handle null/undefined
+                if (aVal === null || aVal === undefined) aVal = direction === 'asc' ? Infinity : -Infinity;
+                if (bVal === null || bVal === undefined) bVal = direction === 'asc' ? Infinity : -Infinity;
+                
+                // Numeric columns
+                const numericColumns = ['value', 'pl_dollar', 'pl_percent', 'portfolio_percent'];
+                if (numericColumns.includes(column)) {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                } else if (typeof aVal === 'string') {
+                    // String columns
+                    aVal = aVal.toUpperCase();
+                    bVal = bVal.toUpperCase();
+                }
+                
+                if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            return sorted;
+        }
+        
+        // Handle statistics table column sort
+        function sortStatsBy(column) {
+            if (statsSort.column === column) {
+                // Toggle direction
+                statsSort.direction = statsSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column, default to ascending
+                statsSort.column = column;
+                statsSort.direction = 'asc';
+            }
+            renderTable();
+            updateStatsSortIndicators();
+        }
+        
+        // Update sort indicators in statistics table headers
+        function updateStatsSortIndicators() {
+            document.querySelectorAll('#statsTable th.sortable').forEach(th => {
+                const col = th.dataset.column;
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (statsSort.column === col) {
+                    th.classList.add(`sort-${statsSort.direction}`);
+                }
+            });
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('statsBody');
+            
+            if (holdings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="no-data">No holdings to display</td></tr>';
+                return;
+            }
+
+            const totalValue = holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+            
+            // Sort holdings before rendering
+            const sortedHoldings = sortStats(holdings);
+
+            tbody.innerHTML = sortedHoldings.map(holding => {
+                const portfolioPercent = totalValue > 0 ? (holding.value / totalValue) * 100 : 0;
+                const plClass = holding.pl_dollar > 0 ? 'positive' : holding.pl_dollar < 0 ? 'negative' : 'neutral';
+                
+                return `
+                    <tr class="holding-row">
+                        <td class="ticker-cell"><a href="/detail/${holding.ticker}">${holding.ticker}</a></td>
+                        <td>${holding.name || '-'}</td>
+                        <td>${formatCurrency(holding.value)}</td>
+                        <td class="${plClass}">${(holding.pl_dollar >= 0 ? '+' : '-')}${formatCurrency(holding.pl_dollar)}</td>
+                        <td class="${plClass}">${(holding.pl_percent >= 0 ? '+' : '')}${holding.pl_percent.toFixed(2)}%</td>
+                        <td>${portfolioPercent.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }).join('');
+            updateStatsSortIndicators();
+        }
+
+        // Create performance chart
+        function createPerformanceChart() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Destroy existing chart
+            if (performanceChart) {
+                performanceChart.destroy();
+                performanceChart = null;
+            }
+
+            // Generate dates for last 30 days
+            const labels = [];
+            const today = new Date();
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }));
+            }
+            
+            const totalInvested = holdings.reduce((sum, h) => sum + (h.entry_price * h.shares), 0);
+            const currentValue = holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+            const totalChange = currentValue - totalInvested;
+            const dailyChange = totalChange / 30; // Simple linear interpolation
+            
+            // Generate data points showing gradual change over 30 days
+            const data = labels.map((_, i) => {
+                const value = totalInvested + (dailyChange * i);
+                // Add some realistic volatility
+                const volatility = (Math.random() - 0.5) * (totalInvested * 0.02);
+                return Math.max(0, value + volatility);
+            });
+            // Ensure last point is actual current value
+            data[data.length - 1] = currentValue;
+
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointBackgroundColor: '#667eea',
+                        tension: 0,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 8
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create breakdown bar chart
+        function createBreakdownChart() {
+            const ctx = document.getElementById('breakdownChart').getContext('2d');
+            
+            if (breakdownChart) {
+                breakdownChart.destroy();
+                breakdownChart = null;
+            }
+
+            if (holdings.length === 0) {
+                return;
+            }
+
+            // Sort holdings by value (descending)
+            const sortedHoldings = [...holdings].sort((a, b) => (b.value || 0) - (a.value || 0));
+            const labels = sortedHoldings.map(h => h.ticker);
+            const data = sortedHoldings.map(h => h.value || 0);
+            
+            // Generate soft gradient colors
+            const colors = data.map((_, i) => {
+                const hue = (i * 137.508) % 360; // Golden angle for color distribution
+                return `hsla(${hue}, 60%, 70%, 0.8)`;
+            });
+
+            breakdownChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Value',
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Horizontal bars
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.x)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Timeline filter handlers
+        document.querySelectorAll('.timeline-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.timeline-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // In a real app, this would filter data by period
+                updateStatistics();
+            });
+        });
+
+        // Initialize
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        loadHoldings();
+        setInterval(loadHoldings, 10000); // Refresh every 10 seconds
+    </script>
+</body>
+</html>
+

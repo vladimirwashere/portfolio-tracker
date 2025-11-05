@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker - Detail</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-nav">
+                <a href="/" class="back-button">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <div class="ticker-header">
+                    <img id="companyLogo" class="company-logo" src="" alt="" style="display:none;">
+                    <h1 id="tickerTitle">Loading...</h1>
+                </div>
+            </div>
+            <div id="datetime" class="datetime"></div>
+        </header>
+
+        <!-- Strategy & Target Prices Section -->
+        <div class="target-prices-section">
+            <h2>Strategy & Targets</h2>
+            <div class="target-prices-grid">
+                <div class="target-card strategy-card">
+                    <div class="target-label">Review Factors / Strategy</div>
+                    <div class="target-value strategy-text" id="reviewFactors">-</div>
+                    <button class="target-edit-btn" onclick="openEditModal('review_factors')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="target-card earnings-card">
+                    <div class="target-label">Next Earnings Call</div>
+                    <div class="target-value small" id="earningsDate">-</div>
+                    <a href="#" id="earningsLink" target="_blank" class="earnings-link">View Details</a>
+                </div>
+                <div class="target-card">
+                    <div class="target-label">Accumulate</div>
+                    <div class="target-value" id="targetAcc">-</div>
+                    <button class="target-edit-btn" onclick="openEditModal('accumulate_price')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="target-card">
+                    <div class="target-label">First Trim</div>
+                    <div class="target-value" id="targetTrim1">-</div>
+                    <div class="target-percentage" id="targetTrim1Pct"></div>
+                    <button class="target-edit-btn" onclick="openEditModal('first_trim')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="target-card">
+                    <div class="target-label">Second Trim</div>
+                    <div class="target-value" id="targetTrim2">-</div>
+                    <div class="target-percentage" id="targetTrim2Pct"></div>
+                    <button class="target-edit-btn" onclick="openEditModal('second_trim')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="target-card">
+                    <div class="target-label">Exit</div>
+                    <div class="target-value" id="targetExit">-</div>
+                    <button class="target-edit-btn" onclick="openEditModal('exit_price')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technical Indicators Section -->
+        
+        <!-- Key Metrics -->
+        <div class="indicator-section">
+            <h3 class="section-title">Key Metrics</h3>
+            <p class="section-help">Current price: <span id="currentPriceDisplay">-</span></p>
+            <div class="indicators-grid">
+                <div class="indicator-card">
+                    <div class="indicator-label">Market Cap</div>
+                    <div class="indicator-value" id="marketCap">-</div>
+                    <div class="indicator-help">Mega &gt;$200B | Large $10-200B | Mid $2-10B | Small $300M-$2B | Micro &lt;$300M. Bigger = stable, Smaller = growth potential but risky</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">Beta</div>
+                    <div class="indicator-value" id="beta">-</div>
+                    <div class="indicator-help">&lt;1: Less volatile than market | &gt;1: More volatile</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">Volume (24h)</div>
+                    <div class="indicator-value" id="volume">-</div>
+                    <div class="indicator-help">Shares traded. Compare to avg volume: Much higher = big news/interest | Lower = low activity. High vol + price move = strong trend</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">ATR (14)</div>
+                    <div class="indicator-value" id="atr">-</div>
+                    <div class="indicator-help">Average price movement - use for stop-loss distance</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">ADX (14)</div>
+                    <div class="indicator-value" id="adx">-</div>
+                    <div class="indicator-help">&lt;25: Weak trend | 25-50: Strong | &gt;50: Very strong</div>
+                </div>
+                <div class="indicator-card stop-loss-card">
+                    <div class="indicator-label">Suggested Stop-Loss</div>
+                    <div class="indicator-value" id="stopLoss">-</div>
+                    <div class="indicator-help">Based on 2× ATR below current price</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RSI Indicators -->
+        <div class="indicator-section">
+            <h3 class="section-title">RSI (Relative Strength Index)</h3>
+            <p class="section-help">Momentum indicator: &lt;30 = Oversold (buy zone) | 30-70 = Neutral | &gt;70 = Overbought (sell zone)</p>
+            <div class="indicators-grid">
+                <div class="indicator-card rsi-card" id="rsi7Card">
+                    <div class="indicator-label">RSI-7</div>
+                    <div class="indicator-value" id="rsi7">-</div>
+                    <div class="indicator-help">Fast - for day trading</div>
+                </div>
+                <div class="indicator-card rsi-card" id="rsi14Card">
+                    <div class="indicator-label">RSI-14</div>
+                    <div class="indicator-value" id="rsi14">-</div>
+                    <div class="indicator-help">Standard - most reliable</div>
+                </div>
+                <div class="indicator-card rsi-card" id="rsi21Card">
+                    <div class="indicator-label">RSI-21</div>
+                    <div class="indicator-value" id="rsi21">-</div>
+                    <div class="indicator-help">Slow - filters noise</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moving Averages -->
+        <div class="indicator-section">
+            <h3 class="section-title">Moving Averages</h3>
+            <p class="section-help">Current: <strong id="currentPriceMA">-</strong> | Price above MA = uptrend | Price below MA = downtrend</p>
+            <div class="indicators-grid">
+                <div class="indicator-card">
+                    <div class="indicator-label">EMA10</div>
+                    <div class="indicator-value" id="ema10">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">EMA20</div>
+                    <div class="indicator-value" id="ema20">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">SMA20</div>
+                    <div class="indicator-value" id="sma20">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">SMA50</div>
+                    <div class="indicator-value" id="sma50">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">SMA200</div>
+                    <div class="indicator-value" id="sma200">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MACD Indicators -->
+        <div class="indicator-section">
+            <h3 class="section-title">MACD (Moving Average Convergence Divergence)</h3>
+            <p class="section-help">MACD above Signal = BUY | MACD below Signal = SELL | Histogram positive (green) = bullish | Histogram negative (red) = bearish | Larger bars = stronger trend | Short (12-26-9) for day trading, Medium (19-39-9) for swing trading, Long (26-52-9) for position trading</p>
+            <div class="indicators-grid">
+                <div class="indicator-card">
+                    <div class="indicator-label">MACD Short (12-26-9)</div>
+                    <div class="indicator-value small" id="macdShort">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">MACD Medium (19-39-9)</div>
+                    <div class="indicator-value small" id="macdMed">-</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">MACD Long (26-52-9)</div>
+                    <div class="indicator-value small" id="macdLong">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bollinger Bands & OBV -->
+        <div class="indicator-section">
+            <h3 class="section-title">Additional Indicators</h3>
+            <div class="indicators-grid">
+                <div class="indicator-card">
+                    <div class="indicator-label">Bollinger Upper</div>
+                    <div class="indicator-value" id="bbUpper">-</div>
+                    <div class="indicator-help">Resistance - price near here = overbought</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">Bollinger Middle</div>
+                    <div class="indicator-value" id="bbMiddle">-</div>
+                    <div class="indicator-help">20-day average - typical price level</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">Bollinger Lower</div>
+                    <div class="indicator-value" id="bbLower">-</div>
+                    <div class="indicator-help">Support - price near here = oversold</div>
+                </div>
+                <div class="indicator-card">
+                    <div class="indicator-label">OBV</div>
+                    <div class="indicator-value" id="obv">-</div>
+                    <div class="indicator-help">Volume flow - rising with price = strong trend</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Chart Section -->
+        <div class="chart-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin: 0;">Price History</h2>
+                <div class="chart-zoom-controls">
+                    <button class="zoom-btn" data-period="1d">1D</button>
+                    <button class="zoom-btn" data-period="5d">5D</button>
+                    <button class="zoom-btn" data-period="1m">1M</button>
+                    <button class="zoom-btn" data-period="3m">3M</button>
+                    <button class="zoom-btn" data-period="6m">6M</button>
+                    <button class="zoom-btn active" data-period="1y">1Y</button>
+                    <button class="zoom-btn" data-period="2y">2Y</button>
+                    <button class="zoom-btn" data-period="5y">5Y</button>
+                </div>
+            </div>
+            <p class="section-help" style="font-size: 0.85em; margin-bottom: 10px;">Price-based indicators overlay on chart. MACD/RSI shown above in cards (need separate sub-chart for accurate visualization)</p>
+            <div class="chart-toolbar">
+                <button class="toolbar-btn active" data-indicator="price">Price</button>
+                <button class="toolbar-btn active" data-indicator="targets">Targets</button>
+                <button class="toolbar-btn" data-indicator="ema10">EMA10</button>
+                <button class="toolbar-btn" data-indicator="ema20">EMA20</button>
+                <button class="toolbar-btn" data-indicator="sma20">SMA20</button>
+                <button class="toolbar-btn" data-indicator="sma50">SMA50</button>
+                <button class="toolbar-btn" data-indicator="sma200">SMA200</button>
+                <button class="toolbar-btn" data-indicator="bb">Bollinger Bands</button>
+            </div>
+            <div class="chart-container-fixed">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- News Feed Section -->
+        <div class="news-section">
+            <h2>Recent News</h2>
+            <div id="newsFeed" class="news-feed">
+                <p class="loading">Loading news...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Target Modal -->
+    <div id="editTargetModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h2 id="editTargetModalTitle">Edit Field</h2>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editTargetForm">
+                <div id="editTargetFormContent"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const TICKER = "{{ ticker }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+</body>
+</html>
+

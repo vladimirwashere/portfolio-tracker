@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <svg class="header-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <h1 class="main-title">Portfolio Tracker</h1>
+            </div>
+            
+            <a href="/statistics" class="portfolio-summary" id="portfolioSummary" title="View Statistics">
+                <div class="portfolio-chart">
+                    <svg width="60" height="60" viewBox="0 0 60 60">
+                        <defs>
+                            <linearGradient id="barGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Bar chart bars -->
+                        <rect x="5" y="35" width="8" height="20" fill="rgba(0, 0, 0, 0.1)" rx="2"/>
+                        <rect x="15" y="25" width="8" height="30" fill="rgba(0, 0, 0, 0.1)" rx="2"/>
+                        <rect x="25" y="15" width="8" height="40" fill="rgba(0, 0, 0, 0.1)" rx="2"/>
+                        <rect x="35" y="30" width="8" height="25" fill="rgba(0, 0, 0, 0.1)" rx="2"/>
+                        <rect x="45" y="20" width="8" height="35" fill="rgba(0, 0, 0, 0.1)" rx="2"/>
+                        <!-- Animated bars -->
+                        <rect id="bar1" x="5" y="55" width="8" height="0" fill="url(#barGradient)" rx="2"/>
+                        <rect id="bar2" x="15" y="55" width="8" height="0" fill="url(#barGradient)" rx="2"/>
+                        <rect id="bar3" x="25" y="55" width="8" height="0" fill="url(#barGradient)" rx="2"/>
+                        <rect id="bar4" x="35" y="55" width="8" height="0" fill="url(#barGradient)" rx="2"/>
+                        <rect id="bar5" x="45" y="55" width="8" height="0" fill="url(#barGradient)" rx="2"/>
+                    </svg>
+                </div>
+                <div class="portfolio-value">
+                    <div class="portfolio-label">Total Value</div>
+                    <div class="portfolio-amount" id="portfolioTotal">$0.00</div>
+                    <div class="portfolio-pl" id="portfolioPL">+$0.00 (0%)</div>
+                </div>
+            </a>
+            
+            <div id="datetime" class="datetime"></div>
+        </header>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="showAddModal()">
+                <i class="fas fa-plus"></i> Add Holding
+            </button>
+            <button class="btn btn-danger" onclick="confirmClearAll()">
+                <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table id="holdingsTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="ticker" onclick="sortHoldingsBy('ticker')">Ticker</th>
+                        <th class="sortable" data-column="name" onclick="sortHoldingsBy('name')">Name</th>
+                        <th class="sortable" data-column="type" onclick="sortHoldingsBy('type')">Type</th>
+                        <th class="sortable" data-column="add_date" onclick="sortHoldingsBy('add_date')">Add Date</th>
+                        <th class="sortable" data-column="entry_price" onclick="sortHoldingsBy('entry_price')">Entry Price</th>
+                        <th class="sortable" data-column="current_price" onclick="sortHoldingsBy('current_price')">Last Price</th>
+                        <th class="sortable" data-column="shares" onclick="sortHoldingsBy('shares')">Shares</th>
+                        <th class="sortable" data-column="pct_change" onclick="sortHoldingsBy('pct_change')">Change %</th>
+                        <th class="sortable" data-column="value" onclick="sortHoldingsBy('value')">Value</th>
+                        <th class="sortable" data-column="pl_dollar" onclick="sortHoldingsBy('pl_dollar')">P/L $</th>
+                        <th class="sortable" data-column="signal" onclick="sortHoldingsBy('signal')">Signal</th>
+                        <th class="sortable" data-column="short_trend" onclick="sortHoldingsBy('short_trend')">Short</th>
+                        <th class="sortable" data-column="med_trend" onclick="sortHoldingsBy('med_trend')">Medium</th>
+                        <th class="sortable" data-column="long_trend" onclick="sortHoldingsBy('long_trend')">Long</th>
+                        <th class="sortable" data-column="week52_range" onclick="sortHoldingsBy('week52_range')">52 Week Range</th>
+                        <th class="actions-header"></th>
+                    </tr>
+                </thead>
+                <tbody id="holdingsBody">
+                    <tr>
+                        <td colspan="16" class="no-data">No holdings yet. Click "Add Holding" to get started.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Wishlist Section -->
+        <h2 style="margin: 40px 0 20px; font-size: 1.8em; font-weight: 700; color: #1d1d1f;">
+            <i class="fas fa-star" style="color: #ffcc00; margin-right: 10px;"></i>
+            Wishlist
+        </h2>
+        
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="showAddWishlistModal()">
+                <i class="fas fa-plus"></i> Add to Wishlist
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table id="wishlistTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="ticker" onclick="sortWishlistBy('ticker')">Ticker</th>
+                        <th class="sortable" data-column="name" onclick="sortWishlistBy('name')">Name</th>
+                        <th class="sortable" data-column="current_price" onclick="sortWishlistBy('current_price')">Last Price</th>
+                        <th class="sortable" data-column="buy_price" onclick="sortWishlistBy('buy_price')">Target Buy</th>
+                        <th class="sortable" data-column="week52_range" onclick="sortWishlistBy('week52_range')">52 Week Range</th>
+                        <th class="sortable" data-column="signal" onclick="sortWishlistBy('signal')">Signal</th>
+                        <th class="sortable" data-column="short_trend" onclick="sortWishlistBy('short_trend')">Short</th>
+                        <th class="sortable" data-column="med_trend" onclick="sortWishlistBy('med_trend')">Medium</th>
+                        <th class="sortable" data-column="long_trend" onclick="sortWishlistBy('long_trend')">Long</th>
+                        <th class="sortable" data-column="notes" onclick="sortWishlistBy('notes')">Notes</th>
+                        <th class="actions-header"></th>
+                    </tr>
+                </thead>
+                <tbody id="wishlistBody">
+                    <tr>
+                        <td colspan="11" class="no-data">No wishlist items yet. Click "Add to Wishlist" to get started.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="holdingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Holding</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="holdingForm">
+                <input type="hidden" id="holdingId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ticker">Ticker Symbol <span class="required">*</span></label>
+                        <input type="text" id="ticker" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="type">Type</label>
+                        <select id="type">
+                            <option value="">Select...</option>
+                            <option value="Long">Long</option>
+                            <option value="Short">Short</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="add_date">Add Date <span class="required">*</span></label>
+                        <input type="date" id="add_date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="entry_price">Entry Price ($) <span class="required">*</span></label>
+                        <input type="number" id="entry_price" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="shares">Number of Shares <span class="required">*</span></label>
+                        <input type="number" id="shares" step="0.01" required>
+                    </div>
+                    
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="review_factors">Review Factors / Strategy (use **text** for bold)</label>
+                    <textarea id="review_factors" rows="2" placeholder="Example: **Buy signal** confirmed on daily chart"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="accumulate_price">Accumulate Price ($)</label>
+                        <input type="number" id="accumulate_price" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="exit_price">Exit Price ($)</label>
+                        <input type="number" id="exit_price" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_trim_price">First Trim Price ($)</label>
+                        <input type="number" id="first_trim_price" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="first_trim_percentage">First Trim %</label>
+                        <input type="number" id="first_trim_percentage" step="0.1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="second_trim_price">Second Trim Price ($)</label>
+                        <input type="number" id="second_trim_price" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="second_trim_percentage">Second Trim %</label>
+                        <input type="number" id="second_trim_percentage" step="0.1">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h2>Confirm Action</h2>
+                <span class="close" onclick="closeConfirmModal()">&times;</span>
+            </div>
+            <p id="confirmMessage"></p>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="executeConfirmedAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal">
+        <div class="modal-content small">
+            <div class="modal-header">
+                <h2 id="wishlistModalTitle">Add to Wishlist</h2>
+                <span class="close" onclick="closeWishlistModal()">&times;</span>
+            </div>
+            <form id="wishlistForm">
+                <input type="hidden" id="wishlistId">
+                <div class="form-group full-width">
+                    <label for="wishlistTicker">Ticker Symbol <span class="required">*</span></label>
+                    <input type="text" id="wishlistTicker" required>
+                </div>
+                <div class="form-group full-width">
+                    <label for="wishlistBuyPrice">Target Buy Price ($)</label>
+                    <input type="number" id="wishlistBuyPrice" step="0.01" placeholder="Optional">
+                </div>
+                <div class="form-group full-width">
+                    <label for="wishlistNotes">Notes</label>
+                    <textarea id="wishlistNotes" rows="3" style="width: 100%; padding: 10px; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; font-family: inherit;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="wishlistSubmitBtn">Add to Wishlist</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+
