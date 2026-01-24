@@ -2,8 +2,6 @@
 
 A simple web app to track your stock portfolio. Built with Flask and Python.
 
-This is my first real project after completing [The Odin Project](https://www.theodinproject.com/). I'm still learning and improving it!
-
 ## Features
 
 - Track your stock holdings
@@ -71,46 +69,3 @@ This is my first real project after completing [The Odin Project](https://www.th
 Shows momentum:
 - Positive histogram: Bullish momentum
 - Negative histogram: Bearish momentum
-
-## Troubleshooting
-
-### "Address already in use" error
-The port is already taken. Either:
-- Find and stop the existing process, or
-- Change the port in `app.py` (change `port=5001` to another number)
-
-### Can't access from iPhone
-1. Verify both devices are on the same Wi-Fi
-2. Check your Mac's firewall settings
-3. Make sure the Terminal is still running the app
-
-### Stock data not loading
-1. Check your internet connection
-2. Verify the ticker symbol is correct
-3. Some stocks may not have complete historical data
-
-## What I Learned
-
-Building this project taught me:
-- Flask and backend development
-- Working with APIs (yfinance)
-- Database design with SQLite
-- JavaScript for dynamic frontend
-- Technical analysis indicators
-- Chart visualization
-
-## Future Improvements
-
-- Add user authentication
-- Portfolio performance over time
-- Email alerts for price targets
-- More technical indicators
-- Export data to CSV
-
-## Notes
-
-This is a learning project. I'm sure there are things I could do better, but I'm happy with what I've built so far!
-
-## License
-
-MIT
