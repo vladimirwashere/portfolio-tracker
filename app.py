@@ -5,6 +5,8 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 import ta
+import os
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -679,13 +681,11 @@ def add_to_wishlist():
         except sqlite3.Error as e:
             error_msg = f'Database error: {str(e)}'
             print(f"SQLite error adding wishlist item: {error_msg}")
-            import traceback
             traceback.print_exc()
             return jsonify({'error': 'Database error. Please check the server logs.'}), 500
         except Exception as e:
             error_msg = f'Unexpected error: {str(e)}'
             print(f"Unexpected error adding wishlist item: {error_msg}")
-            import traceback
             traceback.print_exc()
             return jsonify({'error': 'Server error. Please check the server logs.'}), 500
         finally:
@@ -694,10 +694,8 @@ def add_to_wishlist():
                     conn.close()
                 except Exception as close_error:
                     print(f"Error closing connection: {close_error}")
-                    pass
     except Exception as e:
         print(f"Error in add_to_wishlist: {e}")
-        import traceback
         traceback.print_exc()
         return jsonify({'error': 'Server error. Please try again.'}), 500
 
@@ -728,11 +726,16 @@ def delete_from_wishlist(id):
 
 
 if __name__ == '__main__':
-    import os
     # Use environment variable for debug mode, default to False for production safety
     debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     # Use environment variable for host, default to localhost for security
     host = os.environ.get('FLASK_HOST', '127.0.0.1')
-    port = int(os.environ.get('FLASK_PORT', 5001))
+
+    # Safely parse port with fallback
+    try:
+        port = int(os.environ.get('FLASK_PORT', '5001'))
+    except (ValueError, TypeError):
+        print("Warning: Invalid FLASK_PORT value, using default port 5001")
+        port = 5001
 
     app.run(host=host, port=port, debug=debug_mode)
