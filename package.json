@@ -2,9 +2,11 @@
   "name": "portfolio-tracker",
   "version": "1.0.0",
   "description": "A simple web app to track your stock portfolio. Built with Flask and Python.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint static/js/*.js"
   },
   "keywords": [],
   "author": "",

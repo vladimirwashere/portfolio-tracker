@@ -28,6 +28,18 @@ A simple web app to track your stock portfolio. Built with Flask and Python.
    python3 app.py
    ```
 
+   **Optional: For development/debugging, you can enable debug mode and bind to all interfaces:**
+   ```bash
+   export FLASK_DEBUG=true
+   export FLASK_HOST=0.0.0.0
+   python3 app.py
+   ```
+
+   **Note:** By default, the app runs on `127.0.0.1:5001` for security. Set environment variables to customize:
+   - `FLASK_HOST`: Server host (default: 127.0.0.1)
+   - `FLASK_PORT`: Server port (default: 5001)
+   - `FLASK_DEBUG`: Enable debug mode (default: false, set to 'true' to enable)
+
 4. Open your browser and go to:
    ```
    http://localhost:5001
