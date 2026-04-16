@@ -568,7 +568,7 @@ def add_holding():
             return jsonify({"error": f"Invalid ticker symbol: {ticker}"}), 400
     except ValueError as e:
         logger.warning(f"Validation error in add_holding: {e}")
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Invalid input data"}), 400
     except Exception as e:
         logger.error(f"Unexpected error in add_holding: {e}", exc_info=True)
         return jsonify({"error": "An unexpected error occurred"}), 500
